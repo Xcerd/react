@@ -1,0 +1,5 @@
+[build]
+builder = "nodejs_18"
+
+[env]
+  NODE_ENV = "production"
