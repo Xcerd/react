@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // Register User
-exports.registerUser = async (req, res) => {
+const registerUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
@@ -29,7 +29,7 @@ exports.registerUser = async (req, res) => {
 };
 
 // Login User
-exports.loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -52,4 +52,10 @@ exports.loginUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Error logging in", error });
     }
+};
+
+// Ensure exports are correct
+module.exports = {
+    registerUser,
+    loginUser
 };
