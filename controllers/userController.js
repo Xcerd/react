@@ -1,21 +1,40 @@
 const db = require("../config/db");
 
-exports.getUserBalance = async (req, res) => {
+// Get User Balance
+const getUserBalance = async (req, res) => {
     try {
         const userId = req.user.id;
+
         const result = await db.query("SELECT balance FROM users WHERE id = $1", [userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         res.json({ balance: result.rows[0].balance });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching balance", error });
+        res.status(500).json({ message: "Error retrieving balance", error });
     }
 };
 
-exports.getRecentBookings = async (req, res) => {
+// Get Recent Bookings
+const getRecentBookings = async (req, res) => {
     try {
         const userId = req.user.id;
-        const result = await db.query("SELECT id, service_name, status FROM bookings WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5", [userId]);
-        res.json(result.rows);
+
+        const result = await db.query(
+            "SELECT * FROM bookings WHERE user_id = $1 ORDER BY booking_date DESC LIMIT 5",
+            [userId]
+        );
+
+        res.json({ bookings: result.rows });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching bookings", error });
+        res.status(500).json({ message: "Error retrieving bookings", error });
     }
+};
+
+// ✅ Ensure correct export
+module.exports = {
+    getUserBalance,
+    getRecentBookings
 };

@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { Pool } = require("pg");
+const { VIP_LEVELS, REFERRAL_BONUS } = require("./config/constants"); // ✅ Fix import
 
 const app = express();
 
@@ -19,32 +20,33 @@ const pool = new Pool({
 app.use(cors());
 app.use(bodyParser.json());
 
-// VIP Commission Percentages (Based on Booking Price)
-const VIP_LEVELS = {
-  1: { name: "Trainee", commission: 2 },
-  2: { name: "Junior Member", commission: 5 },
-  3: { name: "Senior Member", commission: 7 },
-  4: { name: "Platinum Member", commission: 10 },
-  5: { name: "Diamond Member", commission: 15 },
-};
+// Import Routes
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const bookingRoutes = require("./routes/bookingRoutes"); 
+const reviewRoutes = require("./routes/reviewRoutes");
+const passwordRoutes = require("./routes/passwordRoutes");
+const customerServiceRoutes = require("./routes/customerServiceRoutes");
+const vipRoutes = require("./routes/vipRoutes");
+const referralRoutes = require("./routes/referralRoutes");
+const historyRoutes = require("./routes/historyRoutes");
 
-// Referral Bonus (Separate from Booking Commission)
-const REFERRAL_BONUS = 20; // Fixed bonus per referred user
-
-// Routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/transactions", require("./routes/transaction_routes"));
-app.use("/api/bookings", require("./routes/booking_routes"));
-app.use("/api/reviews", require("./routes/review_routes"));
-app.use("/api/password", require("./routes/password_routes"));
-app.use("/api/customer-service", require("./routes/customer_service_routes"));
-app.use("/api/vip", require("./routes/vip_routes"));
-app.use("/api/referrals", require("./routes/referral_routes"));
-app.use("/api/history", require("./routes/history_routes"));
+// Apply Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/password", passwordRoutes);
+app.use("/api/customer-service", customerServiceRoutes);
+app.use("/api/vip", vipRoutes);
+app.use("/api/referrals", referralRoutes);
+app.use("/api/history", historyRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
-module.exports = pool;
+// ✅ Export only pool (No VIP_LEVELS)
+module.exports = { pool };

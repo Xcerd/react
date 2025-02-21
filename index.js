@@ -2,43 +2,120 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const { Pool } = require("pg");
 
-// Initialize Express app
 const app = express();
-
-// Database Connection
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: process.env.DB_PORT || 5432,
-});
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// Routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/transactions", require("./routes/transaction_routes"));
-app.use("/api/bookings", require("./routes/booking_routes"));
-app.use("/api/reviews", require("./routes/review_routes"));
-app.use("/api/password", require("./routes/password_routes"));
-app.use("/api/customer-service", require("./routes/customer_service_routes"));
-app.use("/api/vip", require("./routes/vip_routes"));
-app.use("/api/referrals", require("./routes/referral_routes"));
-app.use("/api/history", require("./routes/history_routes"));
+// Debugging: Log what is being imported
+console.log("Loading routes...");
+
+// Declare route variables BEFORE the try blocks
+let authRoutes, userRoutes, transactionRoutes, bookingRoutes, reviewRoutes;
+let passwordRoutes, customerServiceRoutes, vipRoutes, referralRoutes, historyRoutes;
+
+// Import Routes inside try-catch
+try {
+    authRoutes = require("./routes/authRoutes");
+    console.log("✔️ Auth Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading authRoutes:", error.message);
+}
+
+try {
+    userRoutes = require("./routes/userRoutes");
+    console.log("✔️ User Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading userRoutes:", error.message);
+}
+
+try {
+    transactionRoutes = require("./routes/transactionRoutes");
+    console.log("✔️ Transaction Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading transactionRoutes:", error.message);
+}
+
+try {
+    bookingRoutes = require("./routes/bookingRoutes");
+    console.log("✔️ Booking Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading bookingRoutes:", error.message);
+}
+
+try {
+    reviewRoutes = require("./routes/reviewRoutes");
+    console.log("✔️ Review Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading reviewRoutes:", error.message);
+}
+
+try {
+    passwordRoutes = require("./routes/passwordRoutes");
+    console.log("✔️ Password Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading passwordRoutes:", error.message);
+}
+
+try {
+    customerServiceRoutes = require("./routes/customerServiceRoutes");
+    console.log("✔️ Customer Service Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading customerServiceRoutes:", error.message);
+}
+
+try {
+    vipRoutes = require("./routes/vipRoutes");
+    console.log("✔️ Vip Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading vipRoutes:", error.message);
+}
+
+try {
+    referralRoutes = require("./routes/referralRoutes");
+    console.log("✔️ Referral Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading referralRoutes:", error.message);
+}
+
+try {
+    historyRoutes = require("./routes/historyRoutes");
+    console.log("✔️ History Routes Loaded");
+} catch (error) {
+    console.error("❌ Error loading historyRoutes:", error.message);
+}
+
+// Debugging: Check if any route is returning an object instead of a function
+console.log("Auth Routes:", authRoutes);
+console.log("User Routes:", userRoutes);
+console.log("Transaction Routes:", transactionRoutes);
+console.log("Booking Routes:", bookingRoutes);
+console.log("Review Routes:", reviewRoutes);
+console.log("Password Routes:", passwordRoutes);
+console.log("Customer Service Routes:", customerServiceRoutes);
+console.log("VIP Routes:", vipRoutes);
+console.log("Referral Routes:", referralRoutes);
+console.log("History Routes:", historyRoutes);
+
+// Apply Routes (Only if they are defined)
+if (authRoutes) app.use("/api/auth", authRoutes);
+if (userRoutes) app.use("/api/users", userRoutes);
+if (transactionRoutes) app.use("/api/transactions", transactionRoutes);
+if (bookingRoutes) app.use("/api/bookings", bookingRoutes);
+if (reviewRoutes) app.use("/api/reviews", reviewRoutes);
+if (passwordRoutes) app.use("/api/password", passwordRoutes);
+if (customerServiceRoutes) app.use("/api/customer-service", customerServiceRoutes);
+if (vipRoutes) app.use("/api/vip", vipRoutes);
+if (referralRoutes) app.use("/api/referrals", referralRoutes);
+if (historyRoutes) app.use("/api/history", historyRoutes);
 
 // Default Route
 app.get("/", (req, res) => {
-  res.send("API is running...");
+    res.send("API is running...");
 });
 
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-module.exports = pool;

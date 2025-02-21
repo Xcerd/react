@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../config/db");
-const { VIP_LEVELS } = require("../server");
+const pool = require("../config/db"); // ✅ Correct import
+const { VIP_LEVELS } = require("../config/constants"); // ✅ Move VIP_LEVELS to constants.js
 
 // Create a booking
 router.post("/create", async (req, res) => {
@@ -11,7 +11,7 @@ router.post("/create", async (req, res) => {
             "INSERT INTO bookings (user_id, service_name, price, status) VALUES ($1, $2, $3, 'pending') RETURNING *",
             [user_id, service_name, price]
         );
-        
+
         // Fetch user's VIP level
         const user = await pool.query("SELECT vip_level FROM users WHERE id = $1", [user_id]);
         const vipLevel = user.rows[0]?.vip_level || 1;
@@ -41,4 +41,5 @@ router.get("/user/:user_id", async (req, res) => {
     }
 });
 
+// ✅ Ensure that ONLY `router` is exported
 module.exports = router;

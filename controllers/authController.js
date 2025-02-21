@@ -54,7 +54,9 @@ const loginUser = async (req, res) => {
     }
 };
 
-// Ensure exports are correct
+// Debugging: Log to check if functions are exported
+console.log("Auth Controller Loaded");
+
 module.exports = {
     registerUser,
     loginUser
