@@ -1,32 +1,24 @@
 const express = require("express");
+const { pool } = require("../server");
 const router = express.Router();
-const pool = require("../config/db");
 
-// Get booking history
+// ✅ Get User's Booking History
 router.get("/bookings/:user_id", async (req, res) => {
-    const { user_id } = req.params;
     try {
-        const bookings = await pool.query(
-            "SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC",
-            [user_id]
-        );
+        const bookings = await pool.query("SELECT * FROM bookings WHERE user_id = $1", [req.params.user_id]);
         res.json(bookings.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: "Server error" });
     }
 });
 
-// Get transaction history
+// ✅ Get User's Transaction History
 router.get("/transactions/:user_id", async (req, res) => {
-    const { user_id } = req.params;
     try {
-        const transactions = await pool.query(
-            "SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC",
-            [user_id]
-        );
+        const transactions = await pool.query("SELECT * FROM transactions WHERE user_id = $1", [req.params.user_id]);
         res.json(transactions.rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: "Server error" });
     }
 });
 
