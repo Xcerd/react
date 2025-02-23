@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { pool } = require("../server");
+const { pool } = require("../database");
 const router = express.Router();
 
 // ✅ Request Password Reset (Generate Reset Token)
