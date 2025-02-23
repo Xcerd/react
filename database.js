@@ -2,7 +2,7 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL, // ✅ Railway uses full connection strings
+    connectionString: process.env.DB_HOST, // ✅ Railway uses full connection strings
     ssl: {
         rejectUnauthorized: false, // ✅ Needed for Railway PostgreSQL
     },

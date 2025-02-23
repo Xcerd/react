@@ -12,13 +12,17 @@ app.use(bodyParser.json());
 // Debugging: Log what is being imported
 console.log("Loading routes...");
 
-// Declare route variables BEFORE the try blocks
+// Import Database Connection
+const pool = require("./database"); // ✅ Ensures database is loaded
+
+// Import Routes
 let authRoutes, userRoutes, transactionRoutes, bookingRoutes, reviewRoutes;
 let passwordRoutes, customerServiceRoutes, vipRoutes, referralRoutes, historyRoutes;
 
-// Import Routes inside try-catch
+// Use Try-Catch to Debug Errors
 try {
     authRoutes = require("./routes/authRoutes");
+    app.use("/api/auth", authRoutes);
     console.log("✔️ Auth Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading authRoutes:", error.message);
@@ -26,6 +30,7 @@ try {
 
 try {
     userRoutes = require("./routes/userRoutes");
+    app.use("/api/users", userRoutes);
     console.log("✔️ User Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading userRoutes:", error.message);
@@ -33,6 +38,7 @@ try {
 
 try {
     transactionRoutes = require("./routes/transactionRoutes");
+    app.use("/api/transactions", transactionRoutes);
     console.log("✔️ Transaction Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading transactionRoutes:", error.message);
@@ -40,6 +46,7 @@ try {
 
 try {
     bookingRoutes = require("./routes/bookingRoutes");
+    app.use("/api/bookings", bookingRoutes);
     console.log("✔️ Booking Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading bookingRoutes:", error.message);
@@ -47,6 +54,7 @@ try {
 
 try {
     reviewRoutes = require("./routes/reviewRoutes");
+    app.use("/api/reviews", reviewRoutes);
     console.log("✔️ Review Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading reviewRoutes:", error.message);
@@ -54,6 +62,7 @@ try {
 
 try {
     passwordRoutes = require("./routes/passwordRoutes");
+    app.use("/api/password", passwordRoutes);
     console.log("✔️ Password Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading passwordRoutes:", error.message);
@@ -61,6 +70,7 @@ try {
 
 try {
     customerServiceRoutes = require("./routes/customerServiceRoutes");
+    app.use("/api/customer-service", customerServiceRoutes);
     console.log("✔️ Customer Service Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading customerServiceRoutes:", error.message);
@@ -68,6 +78,7 @@ try {
 
 try {
     vipRoutes = require("./routes/vipRoutes");
+    app.use("/api/vip", vipRoutes);
     console.log("✔️ Vip Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading vipRoutes:", error.message);
@@ -75,6 +86,7 @@ try {
 
 try {
     referralRoutes = require("./routes/referralRoutes");
+    app.use("/api/referrals", referralRoutes);
     console.log("✔️ Referral Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading referralRoutes:", error.message);
@@ -82,34 +94,11 @@ try {
 
 try {
     historyRoutes = require("./routes/historyRoutes");
+    app.use("/api/history", historyRoutes);
     console.log("✔️ History Routes Loaded");
 } catch (error) {
     console.error("❌ Error loading historyRoutes:", error.message);
 }
-
-// Debugging: Check if any route is returning an object instead of a function
-console.log("Auth Routes:", authRoutes);
-console.log("User Routes:", userRoutes);
-console.log("Transaction Routes:", transactionRoutes);
-console.log("Booking Routes:", bookingRoutes);
-console.log("Review Routes:", reviewRoutes);
-console.log("Password Routes:", passwordRoutes);
-console.log("Customer Service Routes:", customerServiceRoutes);
-console.log("VIP Routes:", vipRoutes);
-console.log("Referral Routes:", referralRoutes);
-console.log("History Routes:", historyRoutes);
-
-// Apply Routes (Only if they are defined)
-if (authRoutes) app.use("/api/auth", authRoutes);
-if (userRoutes) app.use("/api/users", userRoutes);
-if (transactionRoutes) app.use("/api/transactions", transactionRoutes);
-if (bookingRoutes) app.use("/api/bookings", bookingRoutes);
-if (reviewRoutes) app.use("/api/reviews", reviewRoutes);
-if (passwordRoutes) app.use("/api/password", passwordRoutes);
-if (customerServiceRoutes) app.use("/api/customer-service", customerServiceRoutes);
-if (vipRoutes) app.use("/api/vip", vipRoutes);
-if (referralRoutes) app.use("/api/referrals", referralRoutes);
-if (historyRoutes) app.use("/api/history", historyRoutes);
 
 // Default Route
 app.get("/", (req, res) => {
