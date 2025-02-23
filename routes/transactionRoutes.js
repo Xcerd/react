@@ -1,10 +1,11 @@
 const express = require("express");
 const pool = require("../config/db"); // Ensure correct DB connection
-const router = express.Router();
-const authenticateToken = require("../middleware/authMiddleware"); // Ensure user is authenticated
+const { protect } = require("../middleware/authMiddleware"); // ✅ Ensure user is authenticated
 
-// ✅ Create a Transaction
-router.post("/create", async (req, res) => {
+const router = express.Router();
+
+// ✅ Create a Transaction (Protected)
+router.post("/create", protect, async (req, res) => {
     const { user_id, type, amount } = req.body;
     try {
         const transaction = await pool.query(
@@ -17,8 +18,8 @@ router.post("/create", async (req, res) => {
     }
 });
 
-// ✅ Get User Transactions
-router.get("/user/:user_id", async (req, res) => {
+// ✅ Get User Transactions (Protected)
+router.get("/user/:user_id", protect, async (req, res) => {
     try {
         const transactions = await pool.query("SELECT * FROM transactions WHERE user_id = $1", [req.params.user_id]);
         res.json(transactions.rows);
@@ -27,8 +28,8 @@ router.get("/user/:user_id", async (req, res) => {
     }
 });
 
-// Withdraw Funds
-router.post("/withdraw", authenticateToken, async (req, res) => {
+// ✅ Withdraw Funds (Protected)
+router.post("/withdraw", protect, async (req, res) => {
     const { user_id, amount, pin } = req.body;
 
     try {
@@ -62,6 +63,11 @@ router.post("/withdraw", authenticateToken, async (req, res) => {
         console.error("Error processing withdrawal:", error);
         res.status(500).json({ message: "Server error" });
     }
+});
+
+// ✅ Fetch All Transactions (Protected)
+router.get("/", protect, async (req, res) => {
+    res.json({ message: "Transactions fetched successfully" });
 });
 
 module.exports = router;
