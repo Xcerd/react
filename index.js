@@ -32,7 +32,7 @@ const routeFiles = [
     { path: "/api/history", file: "./routes/historyRoutes" },
     { path: "/api/admin", file: "./routes/adminRoutes" },
     { path: "/api/wallet", file: "./routes/walletRoutes" },
-    { path: "/api/support", file: "./routes/supportRoutes" }
+    
 ];
 
 // ✅ Load Routes Dynamically
