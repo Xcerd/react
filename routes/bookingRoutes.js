@@ -1,13 +1,12 @@
 const express = require("express");
-const { protect } = require("../middleware/authMiddleware");
-const { createBooking, getServices } = require("../controllers/bookingController");
-
 const router = express.Router();
+const { protect } = require("../middleware/authMiddleware"); // Ensure authentication middleware is correct
+const { createBooking, getUserBookings } = require("../controllers/bookingController"); // Ensure correct path
 
 // ✅ Create a Booking
 router.post("/create", protect, createBooking);
 
-// ✅ Get Available Services
-router.get("/services", getServices);
+// ✅ Get User Bookings
+router.get("/user/:user_id", protect, getUserBookings);
 
 module.exports = router;
