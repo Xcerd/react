@@ -96,26 +96,26 @@ router.post(
 router.post(
     "/login",
     [
-        body("email").isEmail().withMessage("Invalid email format"),
+        body("username").notEmpty().withMessage("Username is required"),
         body("password").notEmpty().withMessage("Password is required"),
     ],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-        const { email, password } = req.body;
+        const { username, password } = req.body;
 
         try {
             // ✅ Check User Exists
-            const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+            const user = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
             if (user.rows.length === 0) {
-                return res.status(400).json({ error: "Invalid email or password" });
+                return res.status(400).json({ error: "Invalid username or password" });
             }
 
             // ✅ Validate Password
             const isMatch = await bcrypt.compare(password, user.rows[0].password);
             if (!isMatch) {
-                return res.status(400).json({ error: "Invalid email or password" });
+                return res.status(400).json({ error: "Invalid username or password" });
             }
 
             // ✅ Generate Tokens
