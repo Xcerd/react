@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 console.log("Loading routes...");
 
 // Import Database Connection
-const pool = require("./database"); // ✅ Ensures database is loaded
+const pool = require("./config/db"); // ✅ Ensures database is loaded
 
 // Import Routes
 let authRoutes, userRoutes, transactionRoutes, bookingRoutes, reviewRoutes;

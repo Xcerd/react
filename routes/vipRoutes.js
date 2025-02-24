@@ -1,6 +1,6 @@
 const express = require("express");
-const db = require("../config/db");
-const { authenticateToken } = require("../middleware/authMiddleware");
+const pool = require("../config/db");
+const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -12,27 +12,25 @@ const vipCommissions = {
     4: 0.012, // Diamond Member
 };
 
-// Get User VIP Level
-router.get("/", authenticateToken, async (req, res) => {
-    const userId = req.user.id;
-
+// ✅ Get User VIP Level & Commission (Protected)
+router.get("/", protect, async (req, res) => {
     try {
-        const user = await db.query("SELECT vip_level FROM users WHERE id = $1", [userId]);
+        const user = await pool.query("SELECT vip_level FROM users WHERE id = $1", [req.user.id]);
         if (!user.rows.length) return res.status(404).json({ message: "User not found" });
 
         res.json({ vip_level: user.rows[0].vip_level, commission: vipCommissions[user.rows[0].vip_level] });
     } catch (error) {
+        console.error("Error fetching VIP level:", error);
         res.status(500).json({ message: "Server error", error });
     }
 });
 
-// Calculate Booking Commission
-router.post("/commission", authenticateToken, async (req, res) => {
+// ✅ Calculate Booking Commission (Protected)
+router.post("/commission", protect, async (req, res) => {
     const { bookingPrice } = req.body;
-    const userId = req.user.id;
 
     try {
-        const user = await db.query("SELECT vip_level FROM users WHERE id = $1", [userId]);
+        const user = await pool.query("SELECT vip_level FROM users WHERE id = $1", [req.user.id]);
         if (!user.rows.length) return res.status(404).json({ message: "User not found" });
 
         const vipLevel = user.rows[0].vip_level;
@@ -40,6 +38,7 @@ router.post("/commission", authenticateToken, async (req, res) => {
 
         res.json({ vip_level: vipLevel, commission_earned: commission });
     } catch (error) {
+        console.error("Error calculating commission:", error);
         res.status(500).json({ message: "Server error", error });
     }
 });

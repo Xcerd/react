@@ -2,18 +2,20 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL, // ✅ Railway uses full connection strings
-    ssl: {
-        rejectUnauthorized: false, // ✅ Needed for Railway PostgreSQL
-    },
+    connectionString: process.env.DATABASE_URL, // ✅ Railway PostgreSQL connection
+    ssl: process.env.DATABASE_URL.includes("railway") ? { rejectUnauthorized: false } : false, // ✅ Enable SSL only for Railway
 });
 
-pool.on("connect", () => {
-    console.log("✅ Connected to PostgreSQL Database");
-});
+// ✅ Test the connection at startup
+(async () => {
+    try {
+        const client = await pool.connect();
+        console.log("✅ Successfully connected to PostgreSQL");
+        client.release(); // ✅ Release client back to the pool
+    } catch (error) {
+        console.error("❌ Database Connection Error:", error.message);
+        process.exit(1); // Exit the app if DB connection fails
+    }
+})();
 
-pool.on("error", (err) => {
-    console.error("❌ Database Connection Error:", err.message);
-});
-
-module.exports = { pool };
+module.exports = pool; // ✅ Export correctly
