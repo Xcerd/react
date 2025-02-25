@@ -1,10 +1,13 @@
-exports.createBooking = async (req, res) => {
+const { pool } = require("../config/db"); // ✅ Ensure correct DB connection
+
+// ✅ Create Booking
+const createBooking = async (req, res) => {
     try {
         const { service_id } = req.body;
         const userId = req.user.id;
 
         // ✅ Fetch user details
-        const userRes = await db.query("SELECT daily_bookings FROM users WHERE id = $1", [userId]);
+        const userRes = await pool.query("SELECT daily_bookings FROM users WHERE id = $1", [userId]);
         if (userRes.rows.length === 0) {
             return res.status(404).json({ error: "User not found." });
         }
@@ -15,7 +18,7 @@ exports.createBooking = async (req, res) => {
         }
 
         // ✅ Fetch service details
-        const serviceRes = await db.query("SELECT * FROM services WHERE id = $1", [service_id]);
+        const serviceRes = await pool.query("SELECT * FROM services WHERE id = $1", [service_id]);
         if (serviceRes.rows.length === 0) {
             return res.status(404).json({ error: "Service not found." });
         }
@@ -24,13 +27,13 @@ exports.createBooking = async (req, res) => {
         const commission = (service.price * service.commission_rate) / 100;
 
         // ✅ Insert booking
-        const newBooking = await db.query(
+        const newBooking = await pool.query(
             "INSERT INTO bookings (user_id, service_id, service_name, price, commission, status) VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING *",
             [userId, service.id, service.name, service.price, commission]
         );
 
         // ✅ Update user's "today's rewards" and increment daily bookings count
-        await db.query(
+        await pool.query(
             "UPDATE users SET todays_rewards = todays_rewards + $1, daily_bookings = daily_bookings + 1 WHERE id = $2",
             [commission, userId]
         );
@@ -45,3 +48,17 @@ exports.createBooking = async (req, res) => {
         res.status(500).json({ message: "Error creating booking", error });
     }
 };
+
+// ✅ Get User Bookings
+const getUserBookings = async (req, res) => {
+    try {
+        const bookings = await pool.query("SELECT * FROM bookings WHERE user_id = $1", [req.params.user_id]);
+        res.json(bookings.rows);
+    } catch (error) {
+        console.error("Error fetching bookings:", error);
+        res.status(500).json({ message: "Error fetching bookings", error });
+    }
+};
+
+// ✅ Export functions properly
+module.exports = { createBooking, getUserBookings };
