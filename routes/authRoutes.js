@@ -31,6 +31,55 @@ const generateTokens = (user) => {
     return { accessToken, refreshToken };
 };
 
+// ✅ Validation Middleware for Login
+const validateLogin = [
+    body('username')
+        .trim()
+        .notEmpty().withMessage('Username is required')
+        .isAlphanumeric().withMessage('Username must be alphanumeric'),
+    body('password')
+        .trim()
+        .notEmpty().withMessage('Password is required')
+];
+
+// ✅ User Login Route
+router.post('/login', validateLogin, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { username, password } = req.body;
+
+    try {
+        // ✅ Check if user exists by username
+        const userRes = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        if (userRes.rows.length === 0) {
+            return res.status(400).json({ error: 'Invalid username or password' });
+        }
+
+        const user = userRes.rows[0];
+
+        // ✅ Validate Password
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Invalid username or password' });
+        }
+
+        // ✅ Generate JWT Token
+        const tokens = generateTokens(user);
+
+        res.json({
+            message: 'Login successful',
+            ...tokens,
+            user,
+        });
+    } catch (err) {
+        console.error('Login Error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // ✅ User Registration Route
 router.post(
     "/register",
@@ -88,49 +137,6 @@ router.post(
             });
         } catch (err) {
             console.error("❌ Registration Error:", err);
-            res.status(500).json({ error: "Server error" });
-        }
-    }
-);
-
-// ✅ User Login Route
-router.post(
-    "/login",
-    [
-        body("email").isEmail().withMessage("Invalid email format"),
-        body("password").notEmpty().withMessage("Password is required"),
-    ],
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-        const { email, password } = req.body;
-
-        try {
-            // ✅ Check if user exists
-            const userRes = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-            if (userRes.rows.length === 0) {
-                return res.status(400).json({ error: "Invalid email or password" });
-            }
-
-            const user = userRes.rows[0];
-
-            // ✅ Validate Password
-            const isMatch = await bcrypt.compare(password, user.password_hash);
-            if (!isMatch) {
-                return res.status(400).json({ error: "Invalid email or password" });
-            }
-
-            // ✅ Generate Tokens
-            const tokens = generateTokens(user);
-
-            res.json({
-                message: "Login successful",
-                ...tokens,
-                user,
-            });
-        } catch (err) {
-            console.error("❌ Login Error:", err);
             res.status(500).json({ error: "Server error" });
         }
     }
