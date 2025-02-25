@@ -11,7 +11,7 @@ const generateReferralCode = async () => {
     let code;
     let exists = true;
     while (exists) {
-        code = Math.random().toString(36).substr(2, 8).toUpperCase(); // Generate 8-character referral code
+        code = Math.random().toString(36).substr(2, 5).toUpperCase(); // Generates a 5-character referral code
         const check = await pool.query("SELECT id FROM users WHERE referral_code = $1", [code]);
         if (check.rows.length === 0) exists = false;
     }
@@ -31,7 +31,7 @@ const generateTokens = (user) => {
     return { accessToken, refreshToken };
 };
 
-// ✅ User Registration
+// ✅ User Registration Route
 router.post(
     "/register",
     [
@@ -46,11 +46,12 @@ router.post(
         const { username, email, password, referred_by } = req.body;
 
         try {
-            // ✅ Check if user exists
+            // ✅ Check if the user already exists
             const existingUser = await pool.query(
                 "SELECT * FROM users WHERE username = $1 OR email = $2",
                 [username, email]
             );
+
             if (existingUser.rows.length > 0) {
                 return res.status(400).json({ error: "Username or Email already exists." });
             }
@@ -73,8 +74,8 @@ router.post(
 
             // ✅ Insert New User
             const newUser = await pool.query(
-                "INSERT INTO users (username, email, password, referred_by, referral_code, vip_level, reputation) VALUES ($1, $2, $3, $4, $5, 1, 100) RETURNING *",
-                [username, email, hashedPassword, validReferrer, referralCode]
+                "INSERT INTO users (username, email, password_hash, referral_code, referred_by, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, 1, 100, 0.00, false, false) RETURNING *",
+                [username, email, hashedPassword, referralCode, validReferrer]
             );
 
             // ✅ Generate Tokens
@@ -92,39 +93,41 @@ router.post(
     }
 );
 
-// ✅ User Login
+// ✅ User Login Route
 router.post(
     "/login",
     [
-        body("username").notEmpty().withMessage("Username is required"),
+        body("email").isEmail().withMessage("Invalid email format"),
         body("password").notEmpty().withMessage("Password is required"),
     ],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-        const { username, password } = req.body;
+        const { email, password } = req.body;
 
         try {
-            // ✅ Check User Exists
-            const user = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
-            if (user.rows.length === 0) {
-                return res.status(400).json({ error: "Invalid username or password" });
+            // ✅ Check if user exists
+            const userRes = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+            if (userRes.rows.length === 0) {
+                return res.status(400).json({ error: "Invalid email or password" });
             }
 
+            const user = userRes.rows[0];
+
             // ✅ Validate Password
-            const isMatch = await bcrypt.compare(password, user.rows[0].password);
+            const isMatch = await bcrypt.compare(password, user.password_hash);
             if (!isMatch) {
-                return res.status(400).json({ error: "Invalid username or password" });
+                return res.status(400).json({ error: "Invalid email or password" });
             }
 
             // ✅ Generate Tokens
-            const tokens = generateTokens(user.rows[0]);
+            const tokens = generateTokens(user);
 
             res.json({
                 message: "Login successful",
                 ...tokens,
-                user: user.rows[0],
+                user,
             });
         } catch (err) {
             console.error("❌ Login Error:", err);
