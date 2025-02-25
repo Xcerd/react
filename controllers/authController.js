@@ -44,7 +44,7 @@ const registerUser = async (req, res) => {
 
         // ✅ Insert New User
         const newUser = await db.query(
-            "INSERT INTO users (username, email, password_hash, referred_by, referral_code, vip_level, reputation) VALUES ($1, $2, $3, $4, $5, 1, 100) RETURNING *",
+            "INSERT INTO users (username, email, password, referred_by, referral_code, vip_level, reputation) VALUES ($1, $2, $3, $4, $5, 1, 100) RETURNING *",
             [username, email, hashedPassword, referredBy, newReferralCode]
         );
 
@@ -75,7 +75,7 @@ const loginUser = async (req, res) => {
         }
 
         // ✅ Compare password
-        const isMatch = await bcrypt.compare(password, user.rows[0].password_hash);
+        const isMatch = await bcrypt.compare(password, user.rows[0].password);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid username or password" });
         }

@@ -61,7 +61,7 @@ router.post('/login', validateLogin, async (req, res) => {
         const user = userRes.rows[0];
 
         // ✅ Validate Password
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ error: 'Invalid username or password' });
         }
@@ -123,7 +123,7 @@ router.post(
 
             // ✅ Insert New User
             const newUser = await pool.query(
-                "INSERT INTO users (username, email, password_hash, referral_code, referred_by, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, 1, 100, 0.00, false, false) RETURNING *",
+                "INSERT INTO users (username, email, password, referral_code, referred_by, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, 1, 100, 0.00, false, false) RETURNING *",
                 [username, email, hashedPassword, referralCode, validReferrer]
             );
 
