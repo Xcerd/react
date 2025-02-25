@@ -52,7 +52,8 @@ router.post("/login", validateLogin, async (req, res) => {
         const user = userRes.rows[0];
 
         // ✅ Validate Password
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+
         if (!isMatch) {
             return res.status(400).json({ error: "Invalid username or password" });
         }

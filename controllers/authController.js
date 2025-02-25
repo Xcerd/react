@@ -1,22 +1,27 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
-// ✅ Generate JWT Tokens
-const generateToken = (user) => {
-    return jwt.sign(
+// ✅ Generate JWT Tokens (Access & Refresh)
+const generateTokens = (user) => {
+    const accessToken = jwt.sign(
         { id: user.id, username: user.username, isAdmin: user.is_admin },
         process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: "15m" }
     );
+
+    const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_SECRET, { expiresIn: "7d" });
+
+    return { accessToken, refreshToken };
 };
 
-// ✅ Generate Unique 5-Character Referral Code
+// ✅ Generate Unique Referral Code Securely
 const generateReferralCode = async () => {
     let code;
     let exists = true;
     while (exists) {
-        code = Math.random().toString(36).substr(2, 5).toUpperCase(); // Generates a 5-character referral code
+        code = crypto.randomBytes(3).toString("hex").toUpperCase(); // Generates a 6-character referral code
         const check = await db.query("SELECT id FROM users WHERE referral_code = $1", [code]);
         if (check.rows.length === 0) exists = false;
     }
@@ -52,16 +57,16 @@ const registerUser = async (req, res) => {
 
         // ✅ Insert New User
         const newUser = await db.query(
-            "INSERT INTO users (name, username, email, password, referred_by, referral_code, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
+            "INSERT INTO users (name, username, email, password_hash, referred_by, referral_code, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
             [name, username, email, hashedPassword, referredBy, newReferralCode]
         );
 
-        // ✅ Generate JWT Token
-        const token = generateToken(newUser.rows[0]);
+        // ✅ Generate Tokens
+        const tokens = generateTokens(newUser.rows[0]);
 
         res.status(201).json({
             message: "User registered successfully",
-            token,
+            ...tokens,
             user: newUser.rows[0],
         });
 
@@ -82,18 +87,18 @@ const loginUser = async (req, res) => {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        // ✅ Compare password
-        const isMatch = await bcrypt.compare(password, user.rows[0].password);
+        // ✅ Compare password (Using `password_hash` Instead of `password`)
+        const isMatch = await bcrypt.compare(password, user.rows[0].password_hash);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        // ✅ Generate JWT Token
-        const token = generateToken(user.rows[0]);
+        // ✅ Generate JWT Tokens
+        const tokens = generateTokens(user.rows[0]);
 
         res.json({
             message: "Login successful",
-            token,
+            ...tokens,
             user: user.rows[0],
         });
 
@@ -114,8 +119,10 @@ const refreshToken = async (req, res) => {
 
         if (!userRes.rows.length) return res.status(403).json({ message: "Invalid Token" });
 
-        const token = generateToken(userRes.rows[0]);
-        res.json({ token });
+        // ✅ Generate New Tokens
+        const tokens = generateTokens(userRes.rows[0]);
+
+        res.json(tokens);
     } catch (error) {
         res.status(403).json({ message: "Invalid or Expired Token" });
     }
