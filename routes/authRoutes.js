@@ -1,5 +1,4 @@
 const express = require("express");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const { body, validationResult } = require("express-validator");
@@ -51,10 +50,8 @@ router.post("/login", validateLogin, async (req, res) => {
 
         const user = userRes.rows[0];
 
-        // ✅ Validate Password
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-
-        if (!isMatch) {
+        // ✅ Validate Password (If bcrypt is removed, use direct comparison)
+        if (password !== user.password) {
             return res.status(400).json({ error: "Invalid username or password" });
         }
 
@@ -111,13 +108,10 @@ router.post(
             // ✅ Generate Unique Referral Code
             const referralCode = await generateReferralCode();
 
-            // ✅ Hash Password
-            const hashedPassword = await bcrypt.hash(password, 10);
-
-            // ✅ Insert New User
+            // ✅ Insert New User (Added `password` field)
             const newUser = await pool.query(
                 "INSERT INTO users (name, username, email, password, referral_code, referred_by, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
-                [name, username, email, hashedPassword, referralCode, validReferrer]
+                [name, username, email, password, referralCode, validReferrer]
             );
 
             res.status(201).json({

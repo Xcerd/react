@@ -1,5 +1,4 @@
 const express = require("express");
-const bcrypt = require("bcryptjs");
 const { pool } = require("../config/db");
 const router = express.Router();
 
@@ -13,10 +12,10 @@ router.post("/request-reset", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        const resetToken = Math.random().toString(36).substr(2, 10); // Generate a simple token (Use JWT or UUID in production)
+        const resetToken = Math.random().toString(36).substr(2, 10); // Simple reset token
         await pool.query("UPDATE users SET password = $1 WHERE email = $2", [resetToken, email]);
 
-        // Send resetToken via email (use a mailer service)
+        // Send resetToken via email (use a mailer service in production)
         console.log(`Password Reset Token for ${email}: ${resetToken}`);
 
         res.json({ message: "Password reset token generated. Check your email.", token: resetToken });
@@ -25,7 +24,7 @@ router.post("/request-reset", async (req, res) => {
     }
 });
 
-// ✅ Reset Password
+// ✅ Reset Password (Now Stores Plain Text Password)
 router.post("/reset", async (req, res) => {
     const { email, token, newPassword } = req.body;
     try {
@@ -35,13 +34,13 @@ router.post("/reset", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // In production, validate token properly
+        // Validate reset token
         if (token !== user.rows[0].password) {
             return res.status(400).json({ error: "Invalid reset token" });
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await pool.query("UPDATE users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+        // ✅ Store password in plain text (⚠️ Not secure for production)
+        await pool.query("UPDATE users SET password = $1 WHERE email = $2", [newPassword, email]);
 
         res.json({ message: "Password has been reset successfully" });
     } catch (err) {

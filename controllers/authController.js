@@ -1,26 +1,21 @@
 const db = require("../config/db");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
 
-// ✅ Generate JWT Tokens (Access & Refresh)
-const generateTokens = (user) => {
-    const accessToken = jwt.sign(
+// ✅ Generate JWT Tokens
+const generateToken = (user) => {
+    return jwt.sign(
         { id: user.id, username: user.username, isAdmin: user.is_admin },
         process.env.JWT_SECRET,
-        { expiresIn: "15m" }
+        { expiresIn: "7d" }
     );
-
-    const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_SECRET, { expiresIn: "7d" });
-
-    return { accessToken, refreshToken };
 };
 
-// ✅ Generate Unique Referral Code Securely
+// ✅ Generate Unique 5-Character Referral Code
 const generateReferralCode = async () => {
     let code;
     let exists = true;
     while (exists) {
-        code = crypto.randomBytes(3).toString("hex").toUpperCase(); // Generates a 6-character referral code
+        code = Math.random().toString(36).substr(2, 5).toUpperCase(); // Generates a 5-character referral code
         const check = await db.query("SELECT id FROM users WHERE referral_code = $1", [code]);
         if (check.rows.length === 0) exists = false;
     }
@@ -54,15 +49,15 @@ const registerUser = async (req, res) => {
         // ✅ Insert New User
         const newUser = await db.query(
             "INSERT INTO users (name, username, email, password, referred_by, referral_code, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
-            [name, username, email, password, referredBy, referral_code]
+            [name, username, email, password, referredBy, newReferralCode]
         );
 
-        // ✅ Generate Tokens
-        const tokens = generateTokens(newUser.rows[0]);
+        // ✅ Generate JWT Token
+        const token = generateToken(newUser.rows[0]);
 
         res.status(201).json({
             message: "User registered successfully",
-            ...tokens,
+            token,
             user: newUser.rows[0],
         });
 
@@ -78,24 +73,22 @@ const loginUser = async (req, res) => {
         const { username, password } = req.body;
 
         // ✅ Find user by username
-        const userRes = await db.query("SELECT * FROM users WHERE username = $1", [username]);
-        if (userRes.rows.length === 0) {
+        const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
+        if (user.rows.length === 0) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        const user = userRes.rows[0];
-
-        // ✅ Directly Compare Plain Text Password
-        if (password !== user.password) {
+        // ✅ Compare password (Direct string comparison)
+        if (password !== user.rows[0].password) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        // ✅ Generate JWT Tokens
-        const tokens = generateTokens(user.rows[0]);
+        // ✅ Generate JWT Token
+        const token = generateToken(user.rows[0]);
 
         res.json({
             message: "Login successful",
-            ...tokens,
+            token,
             user: user.rows[0],
         });
 
@@ -116,10 +109,8 @@ const refreshToken = async (req, res) => {
 
         if (!userRes.rows.length) return res.status(403).json({ message: "Invalid Token" });
 
-        // ✅ Generate New Tokens
-        const tokens = generateTokens(userRes.rows[0]);
-
-        res.json(tokens);
+        const token = generateToken(userRes.rows[0]);
+        res.json({ token });
     } catch (error) {
         res.status(403).json({ message: "Invalid or Expired Token" });
     }
