@@ -1,5 +1,4 @@
 const db = require("../config/db");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
@@ -49,16 +48,13 @@ const registerUser = async (req, res) => {
             referredBy = referrer.rows[0].id;
         }
 
-        // ✅ Hash password before storing
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         // ✅ Generate Unique Referral Code
         const newReferralCode = await generateReferralCode();
 
         // ✅ Insert New User
         const newUser = await db.query(
-            "INSERT INTO users (name, username, email, password_hash, referred_by, referral_code, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
-            [name, username, email, hashedPassword, referredBy, newReferralCode]
+            "INSERT INTO users (name, username, email, password, referred_by, referral_code, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
+            [name, username, email, password, referredBy, referral_code]
         );
 
         // ✅ Generate Tokens
@@ -82,14 +78,15 @@ const loginUser = async (req, res) => {
         const { username, password } = req.body;
 
         // ✅ Find user by username
-        const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
-        if (user.rows.length === 0) {
+        const userRes = await db.query("SELECT * FROM users WHERE username = $1", [username]);
+        if (userRes.rows.length === 0) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        // ✅ Compare password (Using `password_hash` Instead of `password`)
-        const isMatch = await bcrypt.compare(password, user.rows[0].password_hash);
-        if (!isMatch) {
+        const user = userRes.rows[0];
+
+        // ✅ Directly Compare Plain Text Password
+        if (password !== user.password) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
