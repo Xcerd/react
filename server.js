@@ -9,8 +9,9 @@ const bodyParser = require("body-parser");
 const app = express();
 
 // ✅ Middleware
-app.use(cors());
+app.use(cors()); // Enable frontend requests
 app.use(bodyParser.json());
+app.use(express.json());
 
 // ✅ Debugging: Log what is being imported
 console.log("🚀 Loading Routes...");
@@ -24,15 +25,15 @@ const routeFiles = [
     { path: "/api/users", file: "./routes/userRoutes" },
     { path: "/api/transactions", file: "./routes/transactionRoutes" },
     { path: "/api/bookings", file: "./routes/bookingRoutes" },
-    { path: "/api/reviews", file: "./routes/reviewRoutes" },
+    { path: "/api/reviews", file: "./routes/reviewRoutes" }, // ✅ Reviews route
     { path: "/api/password", file: "./routes/passwordRoutes" },
     { path: "/api/customer-service", file: "./routes/customerServiceRoutes" },
-    { path: "/api/vip", file: "./routes/vipRoutes" },
+    { path: "/api/vip", file: "./routes/vipRoutes" }, // ✅ VIP route
     { path: "/api/referrals", file: "./routes/referralRoutes" },
     { path: "/api/history", file: "./routes/historyRoutes" },
     { path: "/api/admin", file: "./routes/adminRoutes" },
-    { path: "/api/wallet", file: "./routes/walletRoutes" },
-
+    { path: "/api/wallet", file: "./routes/walletRoutes" }, // ✅ Wallet route
+    { path: "/api/items", file: "./routes/items" } // ✅ Items route (Moved to the correct place)
 ];
 
 // ✅ Load Routes Dynamically
