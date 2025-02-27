@@ -1,7 +1,23 @@
-const db = require("../config/db");
+const express = require("express");
 const jwt = require("jsonwebtoken");
+const pool = require("../config/db");
+const { body, validationResult } = require("express-validator");
 
-// ✅ Generate JWT Tokens
+const router = express.Router();
+
+// ✅ Generate Unique Referral Code
+const generateReferralCode = async () => {
+    let code;
+    let exists = true;
+    while (exists) {
+        code = Math.random().toString(36).substr(2, 5).toUpperCase(); 
+        const check = await pool.query("SELECT id FROM users WHERE referral_code = $1", [code]);
+        if (check.rows.length === 0) exists = false;
+    }
+    return code;
+};
+
+// ✅ Generate JWT Token
 const generateToken = (user) => {
     return jwt.sign(
         { id: user.id, username: user.username, isAdmin: user.is_admin },
@@ -10,117 +26,121 @@ const generateToken = (user) => {
     );
 };
 
-// ✅ Generate Unique 5-Character Referral Code
-const generateReferralCode = async () => {
-    let code;
-    let exists = true;
-    while (exists) {
-        code = Math.random().toString(36).substr(2, 5).toUpperCase(); // Generates a 5-character referral code
-        const check = await db.query("SELECT id FROM users WHERE referral_code = $1", [code]);
-        if (check.rows.length === 0) exists = false;
+// ✅ Validation Middleware for Login
+const validateLogin = [
+    body("username").trim().notEmpty().withMessage("Username is required"),
+    body("password").trim().notEmpty().withMessage("Password is required"),
+];
+
+// ✅ User Login Route
+router.post("/login", validateLogin, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-    return code;
-};
 
-// ✅ Register User (Supports Referral Codes)
-const registerUser = async (req, res) => {
+    const { username, password } = req.body;
+
     try {
-        const { name, username, email, password, referral_code } = req.body;
-
-        // ✅ Check if user already exists
-        const existingUser = await db.query("SELECT * FROM users WHERE username = $1 OR email = $2", [username, email]);
-        if (existingUser.rows.length > 0) {
-            return res.status(400).json({ message: "Username or email already taken" });
+        // ✅ Check if user exists
+        const userRes = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        if (userRes.rows.length === 0) {
+            return res.status(400).json({ error: "Invalid username or password" });
         }
 
-        // ✅ Validate Referral Code (If provided)
-        let referredBy = null;
-        if (referral_code) {
-            const referrer = await db.query("SELECT id FROM users WHERE referral_code = $1", [referral_code]);
-            if (referrer.rows.length === 0) {
-                return res.status(400).json({ message: "Invalid referral code" });
-            }
-            referredBy = referrer.rows[0].id;
-        }
+        const user = userRes.rows[0];
 
-        // ✅ Generate Unique Referral Code
-        const newReferralCode = await generateReferralCode();
-
-        // ✅ Insert New User
-        const newUser = await db.query(
-            "INSERT INTO users (name, username, email, password, referred_by, referral_code, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
-            [name, username, email, password, referredBy, newReferralCode]
-        );
-
-        // ✅ Generate JWT Token
-        const token = generateToken(newUser.rows[0]);
-
-        res.status(201).json({
-            message: "User registered successfully",
-            token,
-            user: newUser.rows[0],
-        });
-
-    } catch (error) {
-        console.error("❌ Registration Error:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-};
-
-// ✅ Login User (Uses `username` Instead of `email`)
-const loginUser = async (req, res) => {
-    try {
-        const { username, password } = req.body;
-
-        // ✅ Find user by username
-        const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
-        if (user.rows.length === 0) {
-            return res.status(400).json({ message: "Invalid username or password" });
-        }
-
-        // ✅ Compare password (Direct string comparison)
-        if (password !== user.rows[0].password) {
-            return res.status(400).json({ message: "Invalid username or password" });
+        // ✅ Validate Password (You should be using bcrypt.compare)
+        if (password !== user.password) { 
+            return res.status(400).json({ error: "Invalid username or password" });
         }
 
         // ✅ Generate JWT Token
-        const token = generateToken(user.rows[0]);
+        const token = generateToken(user);
 
         res.json({
             message: "Login successful",
             token,
-            user: user.rows[0],
+            user,
         });
-
-    } catch (error) {
-        console.error("❌ Login Error:", error);
-        res.status(500).json({ message: "Server error" });
+    } catch (err) {
+        console.error("Login Error:", err);
+        res.status(500).json({ error: "Server error" });
     }
-};
+});
+
+// ✅ User Registration Route
+router.post(
+    "/register",
+    [
+        body("name").trim().notEmpty().withMessage("Full name is required"),
+        body("username").isLength({ min: 3 }).withMessage("Username must be at least 3 characters long"),
+        body("email").isEmail().withMessage("Invalid email format"),
+        body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters long"),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+        const { name, username, email, password, referred_by } = req.body;
+
+        try {
+            // ✅ Check if user already exists
+            const existingUser = await pool.query(
+                "SELECT * FROM users WHERE username = $1 OR email = $2",
+                [username, email]
+            );
+
+            if (existingUser.rows.length > 0) {
+                return res.status(400).json({ error: "Username or Email already exists." });
+            }
+
+            // ✅ Validate referral code
+            let validReferrer = null;
+            if (referred_by) {
+                const referrer = await pool.query("SELECT id FROM users WHERE referral_code = $1", [referred_by]);
+                if (referrer.rows.length === 0) {
+                    return res.status(400).json({ error: "Invalid referral code." });
+                }
+                validReferrer = referrer.rows[0].id;
+            }
+
+            // ✅ Generate Unique Referral Code
+            const referralCode = await generateReferralCode();
+
+            // ✅ Insert New User (Added `password` field)
+            const newUser = await pool.query(
+                "INSERT INTO users (name, username, email, password, referral_code, referred_by, vip_level, reputation, balance, is_admin, is_suspended) VALUES ($1, $2, $3, $4, $5, $6, 1, 100, 0.00, false, false) RETURNING *",
+                [name, username, email, password, referralCode, validReferrer]
+            );
+
+            res.status(201).json({
+                message: "User registered successfully",
+                user: newUser.rows[0],
+            });
+        } catch (err) {
+            console.error("❌ Registration Error:", err);
+            res.status(500).json({ error: "Server error" });
+        }
+    }
+);
 
 // ✅ Refresh Token Route
-const refreshToken = async (req, res) => {
+router.post("/refresh-token", async (req, res) => {
     const { refreshToken } = req.body;
-    if (!refreshToken) return res.status(403).json({ message: "Access Denied" });
+    if (!refreshToken) return res.status(403).json({ error: "Access Denied" });
 
     try {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
-        const userRes = await db.query("SELECT * FROM users WHERE id = $1", [decoded.id]);
+        const userRes = await pool.query("SELECT * FROM users WHERE id = $1", [decoded.id]);
 
-        if (!userRes.rows.length) return res.status(403).json({ message: "Invalid Token" });
+        if (!userRes.rows[0]) return res.status(403).json({ error: "Invalid Token" });
 
         const token = generateToken(userRes.rows[0]);
         res.json({ token });
     } catch (error) {
-        res.status(403).json({ message: "Invalid or Expired Token" });
+        res.status(403).json({ error: "Invalid or Expired Token" });
     }
-};
+});
 
-// ✅ Log to Ensure Controller is Loaded
-console.log("✔️ Auth Controller Loaded");
-
-module.exports = {
-    registerUser,
-    loginUser,
-    refreshToken,
-};
+module.exports = router;

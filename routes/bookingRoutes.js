@@ -1,17 +1,18 @@
-const express = require("express");
-const { createBooking, getUserBookings } = require("../controllers/bookingController"); // ✅ Ensure correct path
-const { protect } = require("../middleware/authMiddleware"); // ✅ Ensure middleware exists
+const getUserBookings = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "Unauthorized access" });
+        }
 
-const router = express.Router();
+        const userId = req.user.id; // ✅ Use authenticated user ID
+        const bookings = await pool.query(
+            "SELECT id, service_name, price, commission, status, booking_date FROM bookings WHERE user_id = $1 ORDER BY booking_date DESC",
+            [userId]
+        );
 
-// 🚀 Debugging: Check if imported functions exist
-console.log("createBooking:", createBooking);
-console.log("getUserBookings:", getUserBookings);
-
-// ✅ Create Booking Route (Ensure Function Exists)
-router.post("/create", protect, createBooking);
-
-// ✅ Get User Bookings Route (Ensure Function Exists)
-router.get("/user/:user_id", protect, getUserBookings);
-
-module.exports = router;
+        res.json(bookings.rows);
+    } catch (error) {
+        console.error("Error fetching bookings:", error);
+        res.status(500).json({ message: "Error fetching bookings", error });
+    }
+};
