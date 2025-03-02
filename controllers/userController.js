@@ -8,14 +8,19 @@ const getUserBalance = async (req, res) => {
         }
         const userId = req.user.id;
 
-        // ✅ Fetch Balance
+        // ✅ Fetch Wallet Balance
         const balanceResult = await db.query("SELECT balance FROM users WHERE id = $1", [userId]);
 
-        // ✅ Fetch Today's Rewards (Sum of commissions earned today)
-        const rewardsResult = await db.query(
-            "SELECT COALESCE(SUM(commission), 0) AS todays_rewards FROM bookings WHERE user_id = $1 AND DATE(booking_date) = CURRENT_DATE",
-            [userId]
-        );
+        // ✅ Choose the correct method to calculate "Today's Rewards"
+        const rewardsQuery = `
+            SELECT COALESCE(SUM(s.price * s.commission_rate / 100), 0) AS todays_rewards 
+            FROM bookings b
+            JOIN services s ON b.service_name = s.name
+            WHERE b.user_id = $1 
+            AND DATE(b.booking_date) = CURRENT_DATE
+        `;
+
+        const rewardsResult = await db.query(rewardsQuery, [userId]);
 
         res.json({ 
             balance: balanceResult.rows[0]?.balance || 0, 
@@ -37,7 +42,7 @@ const getRecentBookings = async (req, res) => {
         const userId = req.user.id;
 
         const result = await db.query(
-            "SELECT id, item_name, price, commission, booking_date FROM bookings WHERE user_id = $1 ORDER BY booking_date DESC LIMIT 5",
+            "SELECT id, service_name AS item_name, price, commission, booking_date FROM bookings WHERE user_id = $1 ORDER BY booking_date DESC LIMIT 5",
             [userId]
         );
 
