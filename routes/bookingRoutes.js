@@ -1,3 +1,8 @@
+const express = require("express");
+const pool = require("../config/db"); 
+const { protect } = require("../middleware/authMiddleware");
+
+
 const getUserBookings = async (req, res) => {
     try {
         if (!req.user || !req.user.id) {
