@@ -98,25 +98,25 @@ router.get("/:id/bookings", protect, async (req, res) => {
 router.get("/:id/todays-rewards", protect, async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(`🔍 Fetching today's rewards for User ID: ${id}`);
 
-        const result = await pool.query("SELECT todays_rewards FROM users WHERE id = $1", [id]);
-
-        if (result.rows.length === 0) {
-            console.log(`⚠️ No user found for ID: ${id}`);
+        // ✅ Check if user exists
+        const userCheck = await pool.query("SELECT id FROM users WHERE id = $1", [id]);
+        if (userCheck.rows.length === 0) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        let todays_rewards = parseFloat(result.rows[0].todays_rewards);
-        if (isNaN(todays_rewards)) todays_rewards = 0;
+        // ✅ Fetch Today's Rewards
+        const result = await pool.query("SELECT COALESCE(todays_rewards, 0) AS todays_rewards FROM users WHERE id = $1", [id]);
 
-        console.log(`✅ Today's Rewards: ${todays_rewards}`);
-        res.json({ todays_rewards: todays_rewards.toFixed(2) }); // ✅ Always return a formatted number
+        const todays_rewards = parseFloat(result.rows[0].todays_rewards);
+        res.json({ todays_rewards: todays_rewards.toFixed(2) });
+
     } catch (error) {
         console.error("❌ Error fetching today's rewards:", error);
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 // ✅ Fetch Wallet Balance for a User
 router.get("/:id/wallet", protect, async (req, res) => {
@@ -137,6 +137,16 @@ router.get("/:id/wallet", protect, async (req, res) => {
         res.json({ balance: balance.toFixed(2) }); // ✅ Always return formatted string
     } catch (error) {
         console.error("❌ Error fetching wallet balance:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.get("/", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM items");
+        res.json(result.rows);
+    } catch (error) {
+        console.error("❌ Error fetching items:", error);
         res.status(500).json({ error: "Server error" });
     }
 });

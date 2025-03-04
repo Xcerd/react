@@ -33,7 +33,7 @@ const routeFiles = [
     { path: "/history", file: "./routes/historyRoutes" },
     { path: "/admin", file: "./routes/adminRoutes" },
     { path: "/wallet", file: "./routes/walletRoutes" }, // ✅ Wallet route
-    { path: "/items", file: "./routes/items" } // ✅ Items route (Moved to the correct place)
+    { path: "/items", file: "./routes/itemsRoutes" } // ✅ Items route (Fixed incorrect file name)
 ];
 
 // ✅ Load Routes Dynamically
