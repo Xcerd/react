@@ -23,7 +23,7 @@ router.get("/profile", protect, async (req, res) => {
     }
 });
 
-// ✅ Get Wallet Details (Includes Balance, Reputation, VIP Level)
+// ✅ Get Wallet Details (Includes Balance)
 router.get("/wallet", protect, async (req, res) => {
     try {
         if (!req.user || !req.user.id) {
@@ -42,10 +42,10 @@ router.get("/wallet", protect, async (req, res) => {
         }
 
         let balance = parseFloat(result.rows[0].balance);
-        if (isNaN(balance)) balance = 0; // ✅ Prevent frontend crash
+        if (isNaN(balance)) balance = 0;
 
         console.log(`✅ Wallet Data: ${balance}`);
-        res.json({ balance });
+        res.json({ balance: balance.toFixed(2) }); // ✅ Always return a valid number as a string
     } catch (error) {
         console.error("❌ Error fetching wallet data:", error);
         res.status(500).json({ error: "Internal server error" });
@@ -69,7 +69,7 @@ router.get("/:id/balance", protect, async (req, res) => {
         if (isNaN(balance)) balance = 0;
 
         console.log(`✅ User Balance: ${balance}`);
-        res.json({ balance });
+        res.json({ balance: balance.toFixed(2) }); // ✅ Standardized Response
     } catch (error) {
         console.error("❌ Error fetching user balance:", error);
         res.status(500).json({ error: "Server error" });
@@ -111,9 +111,32 @@ router.get("/:id/todays-rewards", protect, async (req, res) => {
         if (isNaN(todays_rewards)) todays_rewards = 0;
 
         console.log(`✅ Today's Rewards: ${todays_rewards}`);
-        res.json({ todays_rewards });
+        res.json({ todays_rewards: todays_rewards.toFixed(2) }); // ✅ Always return a formatted number
     } catch (error) {
         console.error("❌ Error fetching today's rewards:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+// ✅ Fetch Wallet Balance for a User
+router.get("/:id/wallet", protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`🔍 Fetching wallet balance for User ID: ${id}`);
+
+        // ✅ Ensure user exists before fetching balance
+        const userCheck = await pool.query("SELECT balance FROM users WHERE id = $1", [id]);
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        let balance = parseFloat(userCheck.rows[0].balance);
+        if (isNaN(balance)) balance = 0;
+
+        console.log(`✅ Wallet Balance: ${balance}`);
+        res.json({ balance: balance.toFixed(2) }); // ✅ Always return formatted string
+    } catch (error) {
+        console.error("❌ Error fetching wallet balance:", error);
         res.status(500).json({ error: "Server error" });
     }
 });
