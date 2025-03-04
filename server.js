@@ -21,19 +21,19 @@ const pool = require("./config/db"); // ✅ Ensures database is loaded
 
 // ✅ Import Routes
 const routeFiles = [
-    { path: "/api/auth", file: "./routes/authRoutes" },
-    { path: "/api/users", file: "./routes/userRoutes" },
-    { path: "/api/transactions", file: "./routes/transactionRoutes" },
-    { path: "/api/bookings", file: "./routes/bookingRoutes" },
-    { path: "/api/reviews", file: "./routes/reviewRoutes" }, // ✅ Reviews route
-    { path: "/api/password", file: "./routes/passwordRoutes" },
-    { path: "/api/customer-service", file: "./routes/customerServiceRoutes" },
-    { path: "/api/vip", file: "./routes/vipRoutes" }, // ✅ VIP route
-    { path: "/api/referrals", file: "./routes/referralRoutes" },
-    { path: "/api/history", file: "./routes/historyRoutes" },
-    { path: "/api/admin", file: "./routes/adminRoutes" },
-    { path: "/api/wallet", file: "./routes/walletRoutes" }, // ✅ Wallet route
-    { path: "/api/items", file: "./routes/items" } // ✅ Items route (Moved to the correct place)
+    { path: "/auth", file: "./routes/authRoutes" },
+    { path: "/users", file: "./routes/userRoutes" },
+    { path: "/transactions", file: "./routes/transactionRoutes" },
+    { path: "/bookings", file: "./routes/bookingRoutes" },
+    { path: "/reviews", file: "./routes/reviewRoutes" }, // ✅ Reviews route
+    { path: "/password", file: "./routes/passwordRoutes" },
+    { path: "/customer-service", file: "./routes/customerServiceRoutes" },
+    { path: "/vip", file: "./routes/vipRoutes" }, // ✅ VIP route
+    { path: "/referrals", file: "./routes/referralRoutes" },
+    { path: "/history", file: "./routes/historyRoutes" },
+    { path: "/admin", file: "./routes/adminRoutes" },
+    { path: "/wallet", file: "./routes/walletRoutes" }, // ✅ Wallet route
+    { path: "/items", file: "./routes/items" } // ✅ Items route (Moved to the correct place)
 ];
 
 // ✅ Load Routes Dynamically
